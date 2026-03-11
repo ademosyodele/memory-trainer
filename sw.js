@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memory-trainer-v6';
+const CACHE_NAME = 'memory-trainer-v7';
 const ASSETS = [
     './',
     'index.html',
@@ -12,6 +12,19 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    );
+});
+
+// Activate Service Worker & Delete Old Caches
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then((keyList) => {
+            return Promise.all(keyList.map((key) => {
+                if (key !== CACHE_NAME) {
+                    return caches.delete(key);
+                }
+            }));
+        })
     );
 });
 
