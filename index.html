@@ -3,20 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Trainer</title>
+    <title>myMemoryRun</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
+            /* Modern, friendly palette */
+            --primary-color: #ff9a3c; /* Soft energetic orange */
+            --primary-hover: #ff8514;
+            --secondary-color: #6c5ce7; /* Calming purple/blue */
+            --bg-color: #fff9f0; /* Warm cream background */
+            --surface-color: #ffffff;
+            --text-color: #2d3436;
+            --border-radius: 24px;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Nunito', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
@@ -25,18 +31,21 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        h1 { margin-bottom: 2rem; }
+        h1 { margin-bottom: 2rem; font-weight: 800; color: var(--primary-color); letter-spacing: -0.5px; }
 
         .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05); /* Soft, diffuse shadow */
+            border: 1px solid rgba(0,0,0,0.02);
             width: 100%;
             max-width: 600px;
             text-align: center;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
 
         .hidden { display: none !important; }
@@ -46,31 +55,61 @@
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
         select, input, textarea {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            padding: 1rem;
+            background-color: var(--bg-color);
+            border: 2px solid transparent;
+            border-radius: 16px; /* Softer inputs */
             font-size: 1rem;
+            font-family: 'Nunito', sans-serif;
             box-sizing: border-box;
+            transition: all 0.2s;
+            color: var(--text-color);
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: var(--surface-color);
         }
         
         .btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-size: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 50px; /* Pill shape */
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: transform 0.1s, background-color 0.2s;
             width: 100%;
+            box-shadow: 0 4px 12px rgba(255, 154, 60, 0.3);
         }
-        .btn:hover { background-color: #1d4ed8; }
-        .btn-danger { background-color: #dc2626; }
-        .btn-danger:hover { background-color: #b91c1c; }
-        .btn-secondary { background-color: #64748b; margin-top: 10px;}
+        .btn:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn-danger { background-color: #ff7675; box-shadow: 0 4px 12px rgba(255, 118, 117, 0.3); }
+        .btn-danger:hover { background-color: #d63031; }
+        
+        .btn-secondary { 
+            background-color: transparent; 
+            color: var(--text-color); 
+            border: 2px solid #dfe6e9; 
+            margin-top: 10px;
+            box-shadow: none;
+        }
+        .btn-secondary:hover { background-color: #dfe6e9; color: #2d3436; }
 
         /* Display Phase */
-        #display-area { font-family: 'Orbitron', sans-serif; font-size: 5rem; font-weight: bold; margin: 3rem 0; min-height: 120px; letter-spacing: 0.05em; }
+        #display-area { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 4.5rem; 
+            font-weight: bold; 
+            margin: 3rem 0; 
+            min-height: 120px; 
+            letter-spacing: 0.05em;
+            color: var(--secondary-color);
+            text-shadow: 0 4px 10px rgba(108, 92, 231, 0.2); 
+        }
         
         /* Animation for new items */
         .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -81,57 +120,111 @@
 
         /* Results Table */
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; }
-        th { background-color: #f1f5f9; }
+        th, td { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 1rem; text-align: left; }
+        th { background-color: transparent; color: var(--secondary-color); font-weight: 800; border-bottom: 2px solid rgba(0,0,0,0.05); }
+        tr:last-child td { border-bottom: none; }
+        
         .correct { background-color: #dcfce7; color: #166534; }
         .incorrect { background-color: #fee2e2; color: #991b1b; }
         
-        /* Dark Mode Overrides */
+        /* Rounded badges for table results */
+        td.correct, td.incorrect { border-radius: 8px; font-weight: bold; text-align: center;}
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        #splash-screen img { width: 120px; height: 120px; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        /* Modern Dark Mode (Deep Blue-Grey, not Black) */
         body.dark-mode {
-            --bg-color: #000000;
-            --text-color: #39ff14; /* Neon Green */
-            --primary-color: #39ff14;
+            --bg-color: #1e272e;
+            --surface-color: #2d3436;
+            --text-color: #dfe6e9;
+            --primary-color: #fab1a0; /* Pastel Peach */
+            --primary-hover: #e17055;
+            --secondary-color: #a29bfe; /* Pastel Purple */
         }
         body.dark-mode .container {
-            background-color: #111;
-            border: 1px solid #333;
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.05);
         }
         body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
-            background-color: #000;
-            color: #39ff14;
-            border-color: #39ff14;
+            background-color: #1e272e;
+            color: var(--text-color);
+        }
+        body.dark-mode select:focus, body.dark-mode input:focus, body.dark-mode textarea:focus {
+             border-color: var(--primary-color);
+             background-color: #1e272e;
         }
         body.dark-mode .btn {
-            background-color: #000;
-            color: #39ff14;
-            border: 1px solid #39ff14;
+            background-color: var(--primary-color);
+            color: #2d3436; /* Dark text on light buttons */
+            box-shadow: 0 4px 12px rgba(250, 177, 160, 0.2);
         }
         body.dark-mode .btn:hover {
-            background-color: #39ff14;
-            color: #000;
+            background-color: var(--primary-hover);
         }
         body.dark-mode th {
-            background-color: #222;
-            color: #39ff14;
+            color: var(--secondary-color);
         }
         body.dark-mode td {
-            border-color: #333;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        body.dark-mode .correct { background-color: #0f3912; color: #39ff14; }
-        body.dark-mode .incorrect { background-color: #390f0f; color: #ff3939; }
+        body.dark-mode .btn-secondary {
+            border-color: #636e72;
+            color: #dfe6e9;
+        }
+        body.dark-mode .btn-secondary:hover {
+            background-color: #636e72;
+        }
+        body.dark-mode .correct { background-color: #00b894; color: #000; }
+        body.dark-mode .incorrect { background-color: #d63031; color: #fff; }
+        body.dark-mode #display-area { text-shadow: 0 4px 15px rgba(162, 155, 254, 0.3); }
+        
+        footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
 
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-    <h1>🧠 Memory Trainer</h1>
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen">
+        <img src="icon-192.png" alt="myMemoryRun Logo">
+        <h2>Loading...</h2>
+    </div>
+
+    <h1>🧠 myMemoryRun</h1>
 
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="container">
-        <button id="theme-btn" class="btn btn-secondary" onclick="toggleTheme()" style="margin-bottom: 20px;">Switch to Dark Mode</button>
-        <button id="install-btn" class="btn hidden" onclick="installApp()" style="margin-bottom: 20px; background-color: #9333ea;">Install App</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end;">
+             <button id="theme-btn" class="btn btn-secondary" onclick="toggleTheme()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin-top:0;">🌙 Mode</button>
+             <button id="install-btn" class="btn hidden" onclick="installApp()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem; margin-top:0; background-color: var(--secondary-color);">⬇ Install</button>
+        </div>
         <div class="form-group">
             <label for="mode">Mode</label>
             <select id="mode" onchange="updateUI()">
@@ -144,6 +237,14 @@
         <div class="form-group">
             <label for="voice-select">Voice</label>
             <select id="voice-select"></select>
+        </div>
+
+        <div class="form-group">
+            <label for="recall-mode">Recall Method</label>
+            <select id="recall-mode">
+                <option value="text">Type Answers</option>
+                <option value="choice">Multiple Choice</option>
+            </select>
         </div>
 
         <div class="form-group hidden" id="digits-group">
@@ -186,8 +287,9 @@
     <!-- RECALL SCREEN -->
     <div id="recall-screen" class="container hidden">
         <h2>Recall Phase</h2>
-        <p>Enter the items you remember in order, separated by spaces, commas, or new lines.</p>
+        <p id="recall-instructions">Enter the items you remember in order, separated by spaces, commas, or new lines.</p>
         <textarea id="recall-input" rows="6" placeholder="Item1 Item2 Item3..."></textarea>
+        <div id="mc-container" class="hidden" style="text-align: left; max-height: 400px; overflow-y: auto;"></div>
         <button class="btn" onclick="checkResults()">Submit Answers</button>
     </div>
 
@@ -209,6 +311,10 @@
         <button class="btn btn-secondary" onclick="backToSetup()">Back to Menu</button>
         <button class="btn btn-danger" style="margin-top: 10px" onclick="clearHistory()">Clear History</button>
     </div>
+
+    <footer>
+        <p>&copy; <span id="copyright-year"></span> myMemoryRun. All rights reserved.</p>
+    </footer>
 
     <script>
         // --- Configuration & State ---
@@ -232,7 +338,8 @@
             chartInstance: null,
             voices: [],
             customBank: [],
-            deferredPrompt: null
+            deferredPrompt: null,
+            recallMode: 'text'
         };
 
         // --- Core Functions ---
@@ -287,12 +394,14 @@
                 quantity: document.getElementById('quantity').value,
                 intervalVal: document.getElementById('interval-val').value,
                 customWords: document.getElementById('custom-words').value,
-                voiceIndex: document.getElementById('voice-select').value
+                voiceIndex: document.getElementById('voice-select').value,
+                recallMode: document.getElementById('recall-mode').value
             };
             localStorage.setItem('memoryTrainerSettings', JSON.stringify(settings));
 
             // 1. Get Settings
             session.mode = document.getElementById('mode').value;
+            session.recallMode = document.getElementById('recall-mode').value;
             session.digits = parseInt(document.getElementById('digits').value) || 2;
             session.continuous = document.getElementById('continuous').checked;
             
@@ -433,13 +542,79 @@
             // Move to Recall
             document.getElementById('display-screen').classList.add('hidden');
             document.getElementById('recall-screen').classList.remove('hidden');
-            document.getElementById('recall-input').focus();
+            
+            if (session.recallMode === 'choice') {
+                document.getElementById('recall-input').classList.add('hidden');
+                document.getElementById('mc-container').classList.remove('hidden');
+                document.getElementById('recall-instructions').textContent = "Select the correct item for each position.";
+                renderMultipleChoice();
+            } else {
+                document.getElementById('recall-input').classList.remove('hidden');
+                document.getElementById('mc-container').classList.add('hidden');
+                document.getElementById('recall-instructions').textContent = "Enter the items you remember in order...";
+                document.getElementById('recall-input').value = ''; 
+                document.getElementById('recall-input').focus();
+            }
+        }
+
+        function renderMultipleChoice() {
+            const container = document.getElementById('mc-container');
+            container.innerHTML = '';
+            
+            session.items.forEach((item, index) => {
+                // 1. Prepare options (Target + 3 Distractors)
+                let options = [item];
+                let pool = (session.mode === 'words') ? WORD_BANK : (session.mode === 'custom' ? session.customBank : []);
+                
+                for (let i = 0; i < 3; i++) {
+                    let distractor;
+                    let attempts = 0;
+                    // Find a unique distractor
+                    do {
+                        if (session.mode === 'numbers') {
+                            distractor = generateItem('numbers', session.digits);
+                        } else {
+                            distractor = pool[Math.floor(Math.random() * pool.length)];
+                        }
+                        attempts++;
+                    } while ((options.includes(distractor) || distractor === item) && attempts < 20);
+                    options.push(distractor);
+                }
+                
+                // 2. Shuffle
+                options.sort(() => Math.random() - 0.5);
+                
+                // 3. Render Dropdown
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `<label style="font-size: 0.9em; color: var(--secondary-color);">Item #${index + 1}</label>`;
+                
+                const select = document.createElement('select');
+                select.className = 'mc-select';
+                
+                // Default empty option
+                select.innerHTML = '<option value="">-- Select --</option>';
+                
+                options.forEach(opt => {
+                    select.innerHTML += `<option value="${opt}">${opt}</option>`;
+                });
+                
+                div.appendChild(select);
+                container.appendChild(div);
+            });
         }
 
         function checkResults() {
-            const inputRaw = document.getElementById('recall-input').value;
-            // Split by space, comma, or newline and filter empty strings
-            const userItems = inputRaw.split(/[\s,]+/).filter(s => s.length > 0);
+            let userItems = [];
+
+            if (session.recallMode === 'choice') {
+                const selects = document.querySelectorAll('.mc-select');
+                selects.forEach(sel => userItems.push(sel.value));
+            } else {
+                const inputRaw = document.getElementById('recall-input').value;
+                // Split by space, comma, or newline and filter empty strings
+                userItems = inputRaw.split(/[\s,]+/).filter(s => s.length > 0);
+            }
             
             let correctCount = 0;
             let html = `<table>
@@ -496,6 +671,7 @@
                 if (settings.quantity) document.getElementById('quantity').value = settings.quantity;
                 if (settings.intervalVal) document.getElementById('interval-val').value = settings.intervalVal;
                 if (settings.customWords) document.getElementById('custom-words').value = settings.customWords;
+                if (settings.recallMode) document.getElementById('recall-mode').value = settings.recallMode;
                 // Voice is handled in populateVoices due to async loading
             }
         }
@@ -557,8 +733,8 @@
 
             // Check theme for colors
             const isDark = document.body.classList.contains('dark-mode');
-            const lineColor = isDark ? '#39ff14' : '#2563eb';
-            const fillColor = isDark ? 'rgba(57, 255, 20, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+            const lineColor = isDark ? '#a29bfe' : '#6c5ce7';
+            const fillColor = isDark ? 'rgba(162, 155, 254, 0.1)' : 'rgba(108, 92, 231, 0.1)';
 
             session.chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -581,10 +757,10 @@
                         y: { 
                             beginAtZero: true, 
                             max: 100,
-                            grid: { color: isDark ? '#333' : '#e2e8f0' }
+                            grid: { color: isDark ? '#636e72' : '#e2e8f0' }
                         },
                         x: {
-                            grid: { color: isDark ? '#333' : '#e2e8f0' }
+                            grid: { color: isDark ? '#636e72' : '#e2e8f0' }
                         }
                     }
                 }
@@ -667,7 +843,7 @@
             
             // Update button text
             const btn = document.getElementById('theme-btn');
-            if(btn) btn.innerText = isDark ? "Switch to Light Mode" : "Switch to Dark Mode";
+            if(btn) btn.innerText = isDark ? "☀️ Light" : "🌙 Dark";
         }
 
         // Load theme preference immediately
@@ -688,7 +864,7 @@
         // Initialize button text based on loaded theme
         if(document.body.classList.contains('dark-mode')) {
             const btn = document.getElementById('theme-btn');
-            if(btn) btn.innerText = "Switch to Light Mode";
+            if(btn) btn.innerText = "☀️ Light";
         }
 
         document.addEventListener('keydown', handleGlobalKeys);
@@ -701,6 +877,13 @@
                     .catch(err => console.log('Service Worker failed:', err));
             });
         }
+
+        // --- Splash Screen Logic ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('fade-out');
+            }, 3000); // 3 second delay
+        });
 
         // --- PWA Installation Logic ---
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -722,6 +905,9 @@
                 });
             }
         }
+        
+        // Set Copyright Year
+        document.getElementById('copyright-year').textContent = new Date().getFullYear();
     </script>
 </body>
 </html>

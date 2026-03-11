@@ -1,6 +1,6 @@
 {
-  "name": "Memory Trainer",
-  "short_name": "MemTrainer",
+  "name": "myMemoryRun",
+  "short_name": "myMemoryRun",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f8fafc",
