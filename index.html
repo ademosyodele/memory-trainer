@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Trainer</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 2rem; }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        select, input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .btn:hover { background-color: #1d4ed8; }
+        .btn-danger { background-color: #dc2626; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-secondary { background-color: #64748b; margin-top: 10px;}
+
+        /* Display Phase */
+        #display-area { font-family: 'Orbitron', sans-serif; font-size: 5rem; font-weight: bold; margin: 3rem 0; min-height: 120px; letter-spacing: 0.05em; }
+        
+        /* Animation for new items */
+        .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Results Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; }
+        th { background-color: #f1f5f9; }
+        .correct { background-color: #dcfce7; color: #166534; }
+        .incorrect { background-color: #fee2e2; color: #991b1b; }
+        
+        /* Dark Mode Overrides */
+        body.dark-mode {
+            --bg-color: #000000;
+            --text-color: #39ff14; /* Neon Green */
+            --primary-color: #39ff14;
+        }
+        body.dark-mode .container {
+            background-color: #111;
+            border: 1px solid #333;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+        body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+            background-color: #000;
+            color: #39ff14;
+            border-color: #39ff14;
+        }
+        body.dark-mode .btn {
+            background-color: #000;
+            color: #39ff14;
+            border: 1px solid #39ff14;
+        }
+        body.dark-mode .btn:hover {
+            background-color: #39ff14;
+            color: #000;
+        }
+        body.dark-mode th {
+            background-color: #222;
+            color: #39ff14;
+        }
+        body.dark-mode td {
+            border-color: #333;
+        }
+        body.dark-mode .correct { background-color: #0f3912; color: #39ff14; }
+        body.dark-mode .incorrect { background-color: #390f0f; color: #ff3939; }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <h1>🧠 Memory Trainer</h1>
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="container">
+        <button id="theme-btn" class="btn btn-secondary" onclick="toggleTheme()" style="margin-bottom: 20px;">Switch to Dark Mode</button>
+        <button id="install-btn" class="btn hidden" onclick="installApp()" style="margin-bottom: 20px; background-color: #9333ea;">Install App</button>
+        <div class="form-group">
+            <label for="mode">Mode</label>
+            <select id="mode" onchange="updateUI()">
+                <option value="words">Words</option>
+                <option value="numbers">Numbers</option>
+                <option value="custom">Custom Words</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="voice-select">Voice</label>
+            <select id="voice-select"></select>
+        </div>
+
+        <div class="form-group hidden" id="digits-group">
+            <label for="digits">Number of Digits</label>
+            <input type="number" id="digits" value="2" min="1" max="12">
+        </div>
+
+        <div class="form-group hidden" id="custom-words-group">
+            <label for="custom-words">Custom Words (Space/Comma separated)</label>
+            <textarea id="custom-words" rows="3" placeholder="Anatomy Physics Chemistry..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Quantity <span style="font-weight:normal; font-size: 0.9em; margin-left: 10px;"><input type="checkbox" id="continuous" onchange="updateUI()"> Continuous Mode (Until Stopped)</span></label>
+            <input type="number" id="quantity" value="5" min="1" max="50">
+        </div>
+
+        <div class="form-group">
+            <label>Interval</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="interval-val" value="2" min="1">
+                <select id="interval-unit">
+                    <option value="1000">Seconds</option>
+                    <option value="60000">Minutes</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn" onclick="startSession()">Start Memory Session</button>
+        <button class="btn btn-secondary" onclick="showProgress()">View Progress</button>
+    </div>
+
+    <!-- DISPLAY SCREEN -->
+    <div id="display-screen" class="container hidden">
+        <p>Memorize this sequence...</p>
+        <div id="display-area"></div>
+        <button class="btn btn-danger" onclick="stopSession()">Stop / I'm Ready</button>
+    </div>
+
+    <!-- RECALL SCREEN -->
+    <div id="recall-screen" class="container hidden">
+        <h2>Recall Phase</h2>
+        <p>Enter the items you remember in order, separated by spaces, commas, or new lines.</p>
+        <textarea id="recall-input" rows="6" placeholder="Item1 Item2 Item3..."></textarea>
+        <button class="btn" onclick="checkResults()">Submit Answers</button>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="results-screen" class="container hidden">
+        <h2>Results</h2>
+        <div id="score-summary"></div>
+        <div id="results-table-container"></div>
+        <button class="btn btn-secondary" onclick="location.reload()">Try Again</button>
+    </div>
+
+    <!-- PROGRESS SCREEN -->
+    <div id="progress-screen" class="container hidden">
+        <h2>Progress History</h2>
+        <div style="position: relative; height: 300px; width: 100%; margin-bottom: 20px;">
+            <canvas id="progressChart"></canvas>
+        </div>
+        <div id="history-container" style="max-height: 400px; overflow-y: auto;"></div>
+        <button class="btn btn-secondary" onclick="backToSetup()">Back to Menu</button>
+        <button class="btn btn-danger" style="margin-top: 10px" onclick="clearHistory()">Clear History</button>
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const WORD_BANK = [
+            "Apple", "River", "House", "Planet", "Train", "Music", "Tiger", "Window", 
+            "Cloud", "Guitar", "Bread", "Clock", "Flower", "Pencil", "Shoes", "Ocean", 
+            "Chair", "Rocket", "Snake", "Bottle", "Lemon", "Bridge", "Ghost", "Robot", 
+            "Camera", "Spider", "Banana", "Ticket", "Jacket", "Wallet", "Market", "Doctor",
+            "Summer", "Winter", "Forest", "Desert", "Castle", "Island", "Hammer", "Basket"
+        ];
+
+        let session = {
+            mode: 'words',
+            items: [],
+            interval: 2000,
+            digits: 2,
+            continuous: false,
+            currentIndex: 0,
+            timerId: null,
+            speechTimerId: null, // Timer for between-digit pauses
+            chartInstance: null,
+            voices: [],
+            customBank: [],
+            deferredPrompt: null
+        };
+
+        // --- Core Functions ---
+        
+        function updateUI() {
+            const mode = document.getElementById('mode').value;
+            const isContinuous = document.getElementById('continuous').checked;
+            
+            // Toggle Digits Input
+            const digitsGroup = document.getElementById('digits-group');
+            if (mode === 'numbers') {
+                digitsGroup.classList.remove('hidden');
+            } else {
+                digitsGroup.classList.add('hidden');
+            }
+
+            // Toggle Custom Words Input
+            const customGroup = document.getElementById('custom-words-group');
+            if (mode === 'custom') {
+                customGroup.classList.remove('hidden');
+            } else {
+                customGroup.classList.add('hidden');
+            }
+
+            // Toggle Quantity Input
+            document.getElementById('quantity').disabled = isContinuous;
+        }
+
+        function generateItem(mode, digits) {
+            if (mode === 'words') {
+                return WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)];
+            } else if (mode === 'custom') {
+                if (!session.customBank || session.customBank.length === 0) return "Error";
+                return session.customBank[Math.floor(Math.random() * session.customBank.length)];
+            } else {
+                // Number Logic
+                if (digits <= 1) return Math.floor(Math.random() * 10).toString();
+                
+                // Calculate range for n digits (e.g., 2 digits: 10-99)
+                const min = Math.pow(10, digits - 1);
+                const max = Math.pow(10, digits) - 1;
+                return Math.floor(min + Math.random() * (max - min + 1)).toString();
+            }
+        }
+
+        function startSession() {
+            // Save preferences to LocalStorage
+            const settings = {
+                mode: document.getElementById('mode').value,
+                digits: document.getElementById('digits').value,
+                continuous: document.getElementById('continuous').checked,
+                quantity: document.getElementById('quantity').value,
+                intervalVal: document.getElementById('interval-val').value,
+                customWords: document.getElementById('custom-words').value,
+                voiceIndex: document.getElementById('voice-select').value
+            };
+            localStorage.setItem('memoryTrainerSettings', JSON.stringify(settings));
+
+            // 1. Get Settings
+            session.mode = document.getElementById('mode').value;
+            session.digits = parseInt(document.getElementById('digits').value) || 2;
+            session.continuous = document.getElementById('continuous').checked;
+            
+            const qty = parseInt(document.getElementById('quantity').value) || 5;
+            const intervalVal = parseInt(document.getElementById('interval-val').value) || 2;
+            const intervalUnit = parseInt(document.getElementById('interval-unit').value) || 1000;
+            session.interval = intervalVal * intervalUnit;
+
+            // Setup Custom Bank if needed
+            if (session.mode === 'custom') {
+                const raw = document.getElementById('custom-words').value;
+                session.customBank = raw.split(/[\s,]+/).filter(s => s.length > 0);
+                if (session.customBank.length === 0) {
+                    alert("Please enter some custom words!");
+                    return;
+                }
+            }
+
+            // 2. Generate Items
+            session.items = [];
+            
+            // If NOT continuous, pre-generate the list
+            if (!session.continuous) {
+                for (let i = 0; i < qty; i++) {
+                    session.items.push(generateItem(session.mode, session.digits));
+                }
+            }
+
+            // 3. Switch UI
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('display-screen').classList.remove('hidden');
+
+            // 4. Start Loop
+            session.currentIndex = 0;
+            showNextItem();
+        }
+
+        function showNextItem() {
+            const displayArea = document.getElementById('display-area');
+            
+            // Logic for retrieving or generating the item
+            let item;
+
+            if (session.continuous) {
+                // Generate on the fly
+                item = generateItem(session.mode, session.digits);
+                session.items.push(item);
+            } else {
+                // Check if finished (Fixed Quantity Mode)
+                if (session.currentIndex >= session.items.length) {
+                    stopSession();
+                    return;
+                }
+                item = session.items[session.currentIndex];
+            }
+
+            
+            // Display
+            displayArea.textContent = item;
+            
+            // Remove class to reset animation, then add it back next frame
+            displayArea.classList.remove('pop-in');
+            void displayArea.offsetWidth; // Trigger reflow
+            displayArea.classList.add('pop-in');
+
+            // Define what happens after the item is spoken
+            const onSpeechEnd = () => {
+                // Schedule the next item to appear
+                session.timerId = setTimeout(() => {
+                    session.currentIndex++;
+                    showNextItem();
+                }, session.interval);
+            };
+
+            // Text-to-Speech, with a callback for when it completes
+            speak(item, onSpeechEnd);
+        }
+
+        function speak(text, onComplete) {
+            const callback = onComplete || (() => {});
+
+            if (!('speechSynthesis' in window) || !text) {
+                callback(); // Immediately callback if speech is not supported or text is empty
+                return;
+            }
+
+            // Cancel any speech that might be lingering from a previous, fast-timed item
+            window.speechSynthesis.cancel();
+
+            // For numbers with multiple digits, speak them with a 1s delay
+            if (session.mode === 'numbers' && text.length > 1) {
+                const digits = text.split('');
+                speakWithPauses(digits, 0, callback);
+            } else {
+                // For words or single digits, speak normally
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.rate = 1; // Normal speed
+                msg.pitch = 1;
+                msg.onend = callback;
+                applyVoice(msg);
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
+        function speakWithPauses(parts, index, onComplete) {
+            // Base case: If all parts have been spoken, call the final callback
+            if (index >= parts.length) {
+                onComplete();
+                return;
+            }
+
+            const part = parts[index];
+            const msg = new SpeechSynthesisUtterance(part);
+            msg.rate = 1;
+            msg.pitch = 1;
+
+            // When the current digit is done speaking...
+            msg.onend = () => {
+                speakWithPauses(parts, index + 1, onComplete);
+            };
+
+            applyVoice(msg);
+            window.speechSynthesis.speak(msg);
+        }
+
+        function applyVoice(msg) {
+            const voiceSelect = document.getElementById('voice-select');
+            if (session.voices.length > 0 && session.voices[voiceSelect.value]) {
+                msg.voice = session.voices[voiceSelect.value];
+            }
+        }
+
+        function stopSession() {
+            clearTimeout(session.timerId);
+            clearTimeout(session.speechTimerId); // Stop any pending digit speech
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel(); // Stop current speech
+
+            // Move to Recall
+            document.getElementById('display-screen').classList.add('hidden');
+            document.getElementById('recall-screen').classList.remove('hidden');
+            document.getElementById('recall-input').focus();
+        }
+
+        function checkResults() {
+            const inputRaw = document.getElementById('recall-input').value;
+            // Split by space, comma, or newline and filter empty strings
+            const userItems = inputRaw.split(/[\s,]+/).filter(s => s.length > 0);
+            
+            let correctCount = 0;
+            let html = `<table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Target</th>
+                                <th>Your Answer</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            // Compare items
+            const maxLen = Math.max(session.items.length, userItems.length);
+            
+            for (let i = 0; i < maxLen; i++) {
+                const target = session.items[i] || "-";
+                const answer = userItems[i] || "-";
+                
+                // Case-insensitive comparison
+                const isCorrect = target.toLowerCase() === answer.toLowerCase();
+                if (isCorrect) correctCount++;
+
+                html += `<tr>
+                            <td>${i + 1}</td>
+                            <td>${target}</td>
+                            <td class="${isCorrect ? 'correct' : 'incorrect'}">${answer}</td>
+                            <td>${isCorrect ? '✅' : '❌'}</td>
+                         </tr>`;
+            }
+
+            html += `</tbody></table>`;
+
+            // Update Summary
+            document.getElementById('score-summary').innerHTML = `<h3>You scored ${correctCount} / ${session.items.length}</h3>`;
+            document.getElementById('results-table-container').innerHTML = html;
+
+            // Save to History
+            saveSessionHistory(session.mode, correctCount, session.items.length);
+
+            // Switch UI
+            document.getElementById('recall-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('hidden');
+        }
+
+        function loadPreferences() {
+            const saved = localStorage.getItem('memoryTrainerSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.mode) document.getElementById('mode').value = settings.mode;
+                if (settings.digits) document.getElementById('digits').value = settings.digits;
+                if (settings.continuous !== undefined) document.getElementById('continuous').checked = settings.continuous;
+                if (settings.quantity) document.getElementById('quantity').value = settings.quantity;
+                if (settings.intervalVal) document.getElementById('interval-val').value = settings.intervalVal;
+                if (settings.customWords) document.getElementById('custom-words').value = settings.customWords;
+                // Voice is handled in populateVoices due to async loading
+            }
+        }
+
+        // --- History / Progress Functions ---
+
+        function saveSessionHistory(mode, score, total) {
+            const history = JSON.parse(localStorage.getItem('memoryTrainerHistory') || '[]');
+            const entry = {
+                date: new Date().toLocaleString(),
+                mode: mode,
+                score: score,
+                total: total
+            };
+            history.unshift(entry); // Add to beginning
+            // Keep last 50 entries
+            if (history.length > 50) history.pop();
+            localStorage.setItem('memoryTrainerHistory', JSON.stringify(history));
+        }
+
+        function showProgress() {
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('progress-screen').classList.remove('hidden');
+            
+            const history = JSON.parse(localStorage.getItem('memoryTrainerHistory') || '[]');
+            const container = document.getElementById('history-container');
+            
+            if (history.length === 0) {
+                if (session.chartInstance) session.chartInstance.destroy();
+                container.innerHTML = '<p>No history yet. Complete a session to see results here!</p>';
+                return;
+            }
+
+            renderChart(history);
+
+            let html = `<table><thead><tr><th>Date</th><th>Mode</th><th>Score</th><th>%</th></tr></thead><tbody>`;
+            
+            history.forEach(h => {
+                const pct = h.total > 0 ? Math.round((h.score / h.total) * 100) : 0;
+                html += `<tr><td>${h.date}</td><td style="text-transform: capitalize">${h.mode}</td><td>${h.score}/${h.total}</td><td>${pct}%</td></tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function renderChart(history) {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            
+            // Destroy previous chart if exists to prevents "flickering" or overlapping
+            if (session.chartInstance) {
+                session.chartInstance.destroy();
+            }
+
+            // Prepare data (reverse so oldest is left, newest is right)
+            const reversedHistory = [...history].reverse();
+            const labels = reversedHistory.map((h, index) => `Session ${index + 1}`);
+            const dataPoints = reversedHistory.map(h => (h.total > 0 ? (h.score / h.total) * 100 : 0));
+
+            // Check theme for colors
+            const isDark = document.body.classList.contains('dark-mode');
+            const lineColor = isDark ? '#39ff14' : '#2563eb';
+            const fillColor = isDark ? 'rgba(57, 255, 20, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+
+            session.chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Accuracy (%)',
+                        data: dataPoints,
+                        borderColor: lineColor,
+                        backgroundColor: fillColor,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4 // Smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            grid: { color: isDark ? '#333' : '#e2e8f0' }
+                        },
+                        x: {
+                            grid: { color: isDark ? '#333' : '#e2e8f0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function backToSetup() {
+            document.getElementById('progress-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+        }
+
+        function clearHistory() {
+            if (confirm("Clear all history?")) {
+                localStorage.removeItem('memoryTrainerHistory');
+                showProgress();
+            }
+        }
+
+        // --- Keyboard Shortcuts ---
+
+        function handleGlobalKeys(e) {
+            // Ignore if focus is on inputs (except for specific combos)
+            const tag = e.target.tagName.toLowerCase();
+            const isInput = tag === 'input' || tag === 'select' || tag === 'textarea';
+
+            // 1. Setup Phase: Enter to Start
+            if (!document.getElementById('setup-screen').classList.contains('hidden')) {
+                if (e.key === 'Enter') startSession();
+            }
+
+            // 2. Display Phase: Space or Enter to Stop
+            else if (!document.getElementById('display-screen').classList.contains('hidden')) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault(); // Prevent scrolling with space
+                    stopSession();
+                }
+            }
+
+            // 3. Recall Phase: Ctrl+Enter to Submit
+            else if (!document.getElementById('recall-screen').classList.contains('hidden')) {
+                if (e.key === 'Enter' && e.ctrlKey) checkResults();
+            }
+
+            // 4. Results Phase: Enter or Space to Reload/Try Again
+            else if (!document.getElementById('results-screen').classList.contains('hidden')) {
+                if (e.key === 'Enter' || e.key === ' ') location.reload();
+            }
+        }
+
+        // --- Voice Loading ---
+        
+        function populateVoices() {
+            session.voices = window.speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById('voice-select');
+            
+            // Clear existing
+            voiceSelect.innerHTML = '';
+            
+            session.voices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = i;
+                voiceSelect.appendChild(option);
+            });
+
+            // Restore preference if exists
+            const saved = localStorage.getItem('memoryTrainerSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.voiceIndex !== undefined && session.voices[settings.voiceIndex]) {
+                    voiceSelect.value = settings.voiceIndex;
+                }
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('memoryTrainerTheme', isDark ? 'dark' : 'light');
+            
+            // Update button text
+            const btn = document.getElementById('theme-btn');
+            if(btn) btn.innerText = isDark ? "Switch to Light Mode" : "Switch to Dark Mode";
+        }
+
+        // Load theme preference immediately
+        if (localStorage.getItem('memoryTrainerTheme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Initialize UI state on load
+        loadPreferences();
+        updateUI();
+        
+        // Setup voices (browsers load them asynchronously)
+        populateVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoices;
+        }
+
+        // Initialize button text based on loaded theme
+        if(document.body.classList.contains('dark-mode')) {
+            const btn = document.getElementById('theme-btn');
+            if(btn) btn.innerText = "Switch to Light Mode";
+        }
+
+        document.addEventListener('keydown', handleGlobalKeys);
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker failed:', err));
+            });
+        }
+
+        // --- PWA Installation Logic ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            session.deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            const installBtn = document.getElementById('install-btn');
+            if (installBtn) installBtn.classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (session.deferredPrompt) {
+                session.deferredPrompt.prompt();
+                session.deferredPrompt.userChoice.then((choiceResult) => {
+                    session.deferredPrompt = null;
+                    document.getElementById('install-btn').classList.add('hidden');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

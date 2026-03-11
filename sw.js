@@ -1,7 +1,7 @@
-const CACHE_NAME = 'memory-trainer-v1';
+const CACHE_NAME = 'memory-trainer-v2';
 const ASSETS = [
     './',
-    'memory_trainer.html',
+    'index.html',
     'https://cdn.jsdelivr.net/npm/chart.js',
     'manifest.json',
     'icon-192.png',
